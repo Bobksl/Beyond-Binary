@@ -425,6 +425,15 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS personality TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gender TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;
 
+-- Extended user profile fields for UniMates
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS hobbies TEXT[] DEFAULT '{}';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activity_preferences TEXT[] DEFAULT '{}';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS buddy_preferences TEXT[] DEFAULT '{}';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS preferred_communication TEXT DEFAULT 'chat';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS academic_goals TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS social_interests TEXT[] DEFAULT '{}';
+
 -- Team-level rotating capability unlock history
 CREATE TABLE IF NOT EXISTS public.team_capability_unlocks (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

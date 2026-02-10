@@ -217,7 +217,6 @@ const Home = () => {
     }
 
     const teamMembers = team.team_members || [];
-    const completedInteractions = teamInteractions.filter(i => i.status === 'completed').length;
     const activeInteractions = teamInteractions.filter(i => i.status === 'active');
 
     return (

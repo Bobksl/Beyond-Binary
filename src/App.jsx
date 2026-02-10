@@ -4,6 +4,7 @@ import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import News from '@/pages/News';
 import Onboarding from '@/pages/Onboarding';
+import Profile from '@/pages/Profile';
 import InternationalStudents from '@/pages/InternationalStudents';
 import Promo from '@/pages/Promo';
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/news" element={<News />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
       </Routes>
     </BrowserRouter>
