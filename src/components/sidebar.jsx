@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { user } from '@/api/entities'; // Ensure path is correct
+import { user, teams } from '@/api/entities'; // Ensure path is correct
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
+  const [teamProgress, setTeamProgress] = useState(null);
 
   // 1. Fetch user on mount
   useEffect(() => {
@@ -19,11 +20,30 @@ const Sidebar = () => {
     fetchUser();
   }, []);
 
-  // 2. Logout Handler
+  // 2. Fetch team progress
+  useEffect(() => {
+    const fetchTeamProgress = async () => {
+      if (currentUser) {
+        try {
+          const team = await teams.myTeam();
+          if (team) {
+            const progress = await teams.getProgress(team.id);
+            setTeamProgress(progress);
+          }
+        } catch (err) {
+          console.error("Error fetching team progress:", err);
+        }
+      }
+    };
+    fetchTeamProgress();
+  }, [currentUser]);
+
+  // 3. Logout Handler
   const handleLogout = async () => {
     try {
       await user.logout();
       setCurrentUser(null);
+      setTeamProgress(null);
       navigate('/'); // Redirect to home
     } catch (err) {
       console.error("Logout failed", err);
@@ -31,7 +51,8 @@ const Sidebar = () => {
   };
 
   const navLinks = [
-    { name: 'Home', path: '/' },
+    { name: 'Team Dashboard', path: '/' },
+    { name: 'News & Updates', path: '/news' },
   ];
 
   return (
