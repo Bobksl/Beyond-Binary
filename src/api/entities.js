@@ -54,6 +54,46 @@ export const user = {
         return data.user;
     },
 
+    completeOnboarding: async (survey) => {
+        const authUser = (await client.auth.getUser()).data.user;
+        if (!authUser) throw new Error('Not authenticated');
+
+        const interests = Array.isArray(survey.interests) ? survey.interests : [];
+        if (interests.length < 3 || interests.length > 4) {
+            throw new Error('Please select 3 to 4 interests.');
+        }
+
+        const { data, error } = await client
+            .from('profiles')
+            .update({
+                nationality: survey.nationality,
+                major: survey.major,
+                year_of_study: survey.year_of_study,
+                interests,
+                personality: survey.personality,
+                gender: survey.gender,
+                onboarding_completed: true,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', authUser.id)
+            .select()
+            .single();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        const { data: reassignedTeam, error: rpcError } = await client.rpc('reassign_user_to_optimal_team', {
+            target_user_id: authUser.id
+        });
+
+        if (rpcError) {
+            console.warn('Team reassignment failed, continuing with existing team:', rpcError.message);
+        }
+
+        return { profile: data, teamId: reassignedTeam };
+    },
+
     logout: async () => {
         const { error } = await client.auth.signOut();
         if (error) {
@@ -105,6 +145,20 @@ export const teams = {
         if (error && error.code !== 'PGRST116') {
             console.error('Error fetching progress:', error);
             return null;
+        }
+        return data;
+    },
+
+    getCapabilityUnlocks: async (teamId) => {
+        const { data, error } = await client
+            .from('team_capability_unlocks')
+            .select('*')
+            .eq('team_id', teamId)
+            .order('unlocked_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching capability unlocks:', error);
+            return [];
         }
         return data;
     }
@@ -269,6 +323,18 @@ export const interactions = {
             throw new Error(error.message);
         }
         return data;
+    },
+
+    verifyInteraction: async (interactionId) => {
+        const { data, error } = await client.rpc('verify_interaction_and_record_progress', {
+            interaction_id_input: interactionId
+        });
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        return data;
     }
 };
 
@@ -306,48 +372,15 @@ export const missions = {
     },
 
     checkCompletion: async (missionId) => {
-        // Get mission progress
-        const { data: progress, error: progressError } = await client
-            .from('mission_progress')
-            .select('interaction_type, user_id')
-            .eq('mission_id', missionId);
+        const { data, error } = await client.rpc('evaluate_mission_completion', {
+            mission_id_input: missionId
+        });
 
-        if (progressError) {
-            throw new Error(progressError.message);
+        if (error) {
+            throw new Error(error.message);
         }
 
-        // Check completion criteria
-        const uniqueInteractionTypes = [...new Set(progress.map(p => p.interaction_type))];
-        const uniqueUsers = [...new Set(progress.map(p => p.user_id))];
-
-        const mission = await client
-            .from('missions')
-            .select('*')
-            .eq('id', missionId)
-            .single();
-
-        if (!mission.data) {
-            return false;
-        }
-
-        const isCompleted = uniqueInteractionTypes.length >= mission.data.required_interactions &&
-                           uniqueUsers.length >= mission.data.required_members;
-
-        if (isCompleted && mission.data.status === 'active') {
-            // Mark mission as completed and update progress
-            await client
-                .from('missions')
-                .update({
-                    status: 'completed',
-                    completed_at: new Date().toISOString()
-                })
-                .eq('id', missionId);
-
-            // Update team progress
-            await client.rpc('increment_team_progress', { mission_team_id: mission.data.team_id });
-        }
-
-        return isCompleted;
+        return !!data;
     }
 };
 
