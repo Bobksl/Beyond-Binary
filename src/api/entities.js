@@ -528,3 +528,19 @@ export const news = {
         }
     }
 };
+
+export const promo = {
+    getAll: async (limit = 100) => {
+        const { data, error } = await client
+            .from('promo')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error) {
+            console.error('Error fetching promo records:', error);
+            return [];
+        }
+        return data;
+    }
+};

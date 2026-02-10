@@ -183,7 +183,7 @@ const Home = () => {
     if (!currentUser) {
         return (
             <div className="text-center py-12">
-                <h1 className="text-3xl font-bold mb-4">Welcome to Beyond Binary</h1>
+                <h1 className="text-3xl font-bold mb-4">Welcome to UniMates</h1>
                 <p className="text-lg text-gray-700 mb-6">Please sign in to join your team mission.</p>
                 <Link to="/login" className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg">Go to Login</Link>
             </div>
@@ -207,7 +207,7 @@ const Home = () => {
     if (!team) {
         return (
             <div className="text-center py-12">
-                <h1 className="text-3xl font-bold mb-4">Welcome to Beyond Binary</h1>
+                <h1 className="text-3xl font-bold mb-4">Welcome to UniMates</h1>
                 <p className="text-lg text-gray-700 mb-6">
                     You're being assigned to a learning team. Please check back soon!
                 </p>

@@ -405,7 +405,7 @@ ON CONFLICT DO NOTHING;
 
 -- Insert sample news
 INSERT INTO public.news (title, content, is_featured, published_at) VALUES
-('Welcome to Beyond Binary!', 'We''re excited to launch our new collaborative learning platform! This game-like app rewards teams for cooperative academic interactions. Start exploring your team dashboard and unlock new features as you work together.', true, NOW()),
+('Welcome to UniMates!', 'We''re excited to launch our new collaborative learning platform! This game-like app rewards teams for cooperative academic interactions. Start exploring your team dashboard and unlock new features as you work together.', true, NOW()),
 ('Team Formation Complete', 'All students have been automatically assigned to learning teams of 4-6 members. Check your team dashboard to see who you''re working with and start collaborating on this week''s mission!', false, NOW() - INTERVAL '2 days'),
 ('First Weekly Mission Begins', 'This week''s challenge: Complete at least 2 different types of cooperative interactions with at least 3 team members. Try peer explanations, collaborative problem-solving, or study sessions!', false, NOW() - INTERVAL '1 day'),
 ('New Features Coming Soon', 'As your team completes missions and levels up, you''ll unlock powerful collaborative tools including shared whiteboards, peer tutoring rooms, and exam preparation templates. Keep up the great work!', false, NOW() - INTERVAL '3 hours'),

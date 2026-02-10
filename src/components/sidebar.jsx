@@ -34,12 +34,16 @@ const Sidebar = () => {
     { name: 'Team Dashboard', path: '/' },
     { name: 'News & Updates', path: '/news' },
     { name: 'My Profile', path: '/profile' },
+    { name: 'News & Updates', path: '/' },
+    { name: 'Team Dashboard', path: '/home' },
+    { name: 'For International Students', path: '/international-students' },
+    { name: 'Promo', path: '/promo' },
   ];
 
   return (
     <aside className="w-64 bg-white border-r h-screen sticky top-0 flex flex-col">
       <div className="p-6 font-bold text-xl text-blue-600 border-b">
-        My App
+        UniMates
       </div>
 
       <nav className="p-4 space-y-2">
