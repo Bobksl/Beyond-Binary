@@ -411,3 +411,425 @@ INSERT INTO public.news (title, content, is_featured, published_at) VALUES
 ('New Features Coming Soon', 'As your team completes missions and levels up, you''ll unlock powerful collaborative tools including shared whiteboards, peer tutoring rooms, and exam preparation templates. Keep up the great work!', false, NOW() - INTERVAL '3 hours'),
 ('Study Tips & Resources', 'Remember to mark explanations as "helpful" when you learn something new, and don''t forget to validate your teammates'' contributions. Every interaction helps your team progress!', false, NOW() - INTERVAL '6 hours')
 ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- Onboarding survey extensions + cooperative enforcement
+-- =====================================================
+
+-- Interactive onboarding fields
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS nationality TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS major TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS year_of_study INTEGER;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS interests TEXT[] DEFAULT '{}';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS personality TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gender TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT false;
+
+-- Team-level rotating capability unlock history
+CREATE TABLE IF NOT EXISTS public.team_capability_unlocks (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE NOT NULL,
+    mission_id UUID REFERENCES public.missions(id) ON DELETE CASCADE NOT NULL,
+    capability_key TEXT NOT NULL CHECK (capability_key IN (
+        'shared_whiteboard',
+        'peer_tutoring_room',
+        'exam_prep_templates',
+        'wellbeing_micro_activities'
+    )),
+    unlocked_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(team_id, mission_id)
+);
+
+ALTER TABLE public.team_capability_unlocks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view team capability unlocks for their teams" ON public.team_capability_unlocks
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.team_members
+            WHERE team_id = team_capability_unlocks.team_id AND user_id = auth.uid()
+        )
+    );
+
+-- Compatibility score between two users for buddy grouping
+CREATE OR REPLACE FUNCTION public.profile_compatibility_score(user_a UUID, user_b UUID)
+RETURNS NUMERIC AS $$
+DECLARE
+    a public.profiles%ROWTYPE;
+    b public.profiles%ROWTYPE;
+    shared_interest_count INTEGER := 0;
+    score NUMERIC := 0;
+BEGIN
+    SELECT * INTO a FROM public.profiles WHERE id = user_a;
+    SELECT * INTO b FROM public.profiles WHERE id = user_b;
+
+    IF a.id IS NULL OR b.id IS NULL THEN
+        RETURN 0;
+    END IF;
+
+    IF a.major IS NOT NULL AND b.major IS NOT NULL AND a.major = b.major THEN
+        score := score + 2;
+    END IF;
+
+    IF a.year_of_study IS NOT NULL AND b.year_of_study IS NOT NULL THEN
+        IF ABS(a.year_of_study - b.year_of_study) <= 1 THEN
+            score := score + 1.5;
+        END IF;
+    END IF;
+
+    IF a.nationality IS NOT NULL AND b.nationality IS NOT NULL THEN
+        IF a.nationality = b.nationality THEN
+            score := score + 0.5;
+        ELSE
+            score := score + 0.75;
+        END IF;
+    END IF;
+
+    IF a.personality IS NOT NULL AND b.personality IS NOT NULL THEN
+        IF a.personality = b.personality THEN
+            score := score + 1;
+        ELSE
+            score := score + 0.75;
+        END IF;
+    END IF;
+
+    IF a.interests IS NOT NULL AND b.interests IS NOT NULL THEN
+        SELECT COUNT(*) INTO shared_interest_count
+        FROM UNNEST(a.interests) ai
+        INNER JOIN UNNEST(b.interests) bi ON ai = bi;
+
+        score := score + LEAST(3, shared_interest_count);
+    END IF;
+
+    RETURN score;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Reassign user to most compatible team after onboarding completion.
+-- Uses capacity and compatibility constraints (stable-preference style for one-sided assignment).
+CREATE OR REPLACE FUNCTION public.reassign_user_to_optimal_team(target_user_id UUID DEFAULT auth.uid())
+RETURNS UUID AS $$
+DECLARE
+    current_team_id UUID;
+    current_team_size INTEGER := 0;
+    best_team_id UUID;
+    best_score NUMERIC := -1;
+    current_team_score NUMERIC := 0;
+BEGIN
+    IF target_user_id IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    SELECT tm.team_id
+    INTO current_team_id
+    FROM public.team_members tm
+    WHERE tm.user_id = target_user_id AND tm.is_active = true
+    LIMIT 1;
+
+    IF current_team_id IS NOT NULL THEN
+        SELECT COUNT(*) INTO current_team_size
+        FROM public.team_members
+        WHERE team_id = current_team_id AND is_active = true;
+
+        SELECT COALESCE(AVG(public.profile_compatibility_score(target_user_id, tm.user_id)), 0)
+        INTO current_team_score
+        FROM public.team_members tm
+        WHERE tm.team_id = current_team_id
+          AND tm.is_active = true
+          AND tm.user_id <> target_user_id;
+    END IF;
+
+    SELECT candidate.team_id, candidate.avg_score
+    INTO best_team_id, best_score
+    FROM (
+        SELECT
+            t.id AS team_id,
+            COALESCE(AVG(public.profile_compatibility_score(target_user_id, tm.user_id)), 0)
+                + CASE
+                    WHEN COUNT(tm.user_id) < 4 THEN 1.5
+                    WHEN COUNT(tm.user_id) BETWEEN 4 AND 5 THEN 1
+                    ELSE 0
+                  END AS avg_score
+        FROM public.teams t
+        LEFT JOIN public.team_members tm
+            ON tm.team_id = t.id AND tm.is_active = true AND tm.user_id <> target_user_id
+        WHERE t.is_active = true
+          AND (
+              SELECT COUNT(*)
+              FROM public.team_members tm2
+              WHERE tm2.team_id = t.id AND tm2.is_active = true
+          ) < 6
+        GROUP BY t.id
+    ) candidate
+    ORDER BY candidate.avg_score DESC
+    LIMIT 1;
+
+    IF best_team_id IS NULL THEN
+        RETURN current_team_id;
+    END IF;
+
+    IF current_team_id IS NULL THEN
+        INSERT INTO public.team_members (team_id, user_id, is_active)
+        VALUES (best_team_id, target_user_id, true)
+        ON CONFLICT (team_id, user_id)
+        DO UPDATE SET is_active = true;
+
+        RETURN best_team_id;
+    END IF;
+
+    IF best_team_id = current_team_id THEN
+        RETURN current_team_id;
+    END IF;
+
+    -- Move only when meaningfully better, and don't underfill source team
+    IF best_score >= current_team_score + 0.5 AND current_team_size > 4 THEN
+        UPDATE public.team_members
+        SET is_active = false
+        WHERE team_id = current_team_id
+          AND user_id = target_user_id;
+
+        INSERT INTO public.team_members (team_id, user_id, is_active)
+        VALUES (best_team_id, target_user_id, true)
+        ON CONFLICT (team_id, user_id)
+        DO UPDATE SET is_active = true;
+
+        RETURN best_team_id;
+    END IF;
+
+    RETURN current_team_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Rotating team capability unlock after each completed mission
+CREATE OR REPLACE FUNCTION public.grant_rotating_capability(team_id_input UUID, mission_id_input UUID)
+RETURNS TEXT AS $$
+DECLARE
+    unlock_count INTEGER;
+    capability TEXT;
+BEGIN
+    SELECT COUNT(*) INTO unlock_count
+    FROM public.team_capability_unlocks
+    WHERE team_id = team_id_input;
+
+    capability := (ARRAY[
+        'shared_whiteboard',
+        'peer_tutoring_room',
+        'exam_prep_templates',
+        'wellbeing_micro_activities'
+    ])[((unlock_count % 4) + 1)];
+
+    INSERT INTO public.team_capability_unlocks (team_id, mission_id, capability_key)
+    VALUES (team_id_input, mission_id_input, capability)
+    ON CONFLICT (team_id, mission_id) DO NOTHING;
+
+    RETURN capability;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Strict mission completion check (>=2 interaction rules + >=3 unique contributors)
+CREATE OR REPLACE FUNCTION public.evaluate_mission_completion(mission_id_input UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+    mission_record public.missions%ROWTYPE;
+    unique_types INTEGER := 0;
+    unique_members INTEGER := 0;
+BEGIN
+    SELECT * INTO mission_record
+    FROM public.missions
+    WHERE id = mission_id_input;
+
+    IF mission_record.id IS NULL THEN
+        RETURN false;
+    END IF;
+
+    SELECT COUNT(DISTINCT interaction_type), COUNT(DISTINCT user_id)
+    INTO unique_types, unique_members
+    FROM public.mission_progress
+    WHERE mission_id = mission_record.id;
+
+    IF unique_types >= mission_record.required_interactions
+       AND unique_members >= mission_record.required_members
+       AND mission_record.status = 'active' THEN
+
+        UPDATE public.missions
+        SET status = 'completed', completed_at = NOW()
+        WHERE id = mission_record.id;
+
+        PERFORM public.increment_team_progress(mission_record.team_id);
+        PERFORM public.grant_rotating_capability(mission_record.team_id, mission_record.id);
+        RETURN true;
+    END IF;
+
+    RETURN mission_record.status = 'completed';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Rule verification + anti-gaming insertion for mission_progress
+CREATE OR REPLACE FUNCTION public.verify_interaction_and_record_progress(interaction_id_input UUID)
+RETURNS JSONB AS $$
+DECLARE
+    interaction_record public.interactions%ROWTYPE;
+    mission_record public.missions%ROWTYPE;
+    post_contribution RECORD;
+    helpful_validation RECORD;
+    validator_concept_check RECORD;
+    editor_ids UUID[];
+    final_validator_id UUID;
+    attendee_ids UUID[];
+    reflected_ids UUID[];
+    active_user_ids UUID[] := ARRAY[]::UUID[];
+    active_user_id UUID;
+    mission_completed BOOLEAN := false;
+BEGIN
+    SELECT * INTO interaction_record
+    FROM public.interactions
+    WHERE id = interaction_id_input;
+
+    IF interaction_record.id IS NULL THEN
+        RETURN jsonb_build_object('verified', false, 'reason', 'interaction_not_found');
+    END IF;
+
+    -- Ensure current week mission exists
+    INSERT INTO public.missions (team_id, week_start, week_end)
+    VALUES (
+        interaction_record.team_id,
+        DATE_TRUNC('week', interaction_record.created_at)::DATE,
+        DATE_TRUNC('week', interaction_record.created_at)::DATE + INTERVAL '6 days'
+    )
+    ON CONFLICT (team_id, week_start) DO NOTHING;
+
+    SELECT * INTO mission_record
+    FROM public.missions
+    WHERE team_id = interaction_record.team_id
+      AND week_start = DATE_TRUNC('week', interaction_record.created_at)::DATE
+    LIMIT 1;
+
+    IF mission_record.id IS NULL THEN
+        RETURN jsonb_build_object('verified', false, 'reason', 'mission_not_found');
+    END IF;
+
+    IF interaction_record.interaction_type = 'peer_explanation' THEN
+        -- Rule 1: poster + helpful marker + concept check
+        SELECT * INTO post_contribution
+        FROM public.contributions
+        WHERE interaction_id = interaction_record.id
+          AND contribution_type = 'post'
+        ORDER BY created_at ASC
+        LIMIT 1;
+
+        IF post_contribution.id IS NULL THEN
+            RETURN jsonb_build_object('verified', false, 'reason', 'missing_peer_explanation_post');
+        END IF;
+
+        SELECT * INTO helpful_validation
+        FROM public.validations
+        WHERE interaction_id = interaction_record.id
+          AND contribution_id = post_contribution.id
+          AND validation_type = 'helpful'
+          AND validator_id <> post_contribution.user_id
+        ORDER BY created_at ASC
+        LIMIT 1;
+
+        IF helpful_validation.id IS NULL THEN
+            RETURN jsonb_build_object('verified', false, 'reason', 'missing_helpful_validation');
+        END IF;
+
+        SELECT * INTO validator_concept_check
+        FROM public.contributions
+        WHERE interaction_id = interaction_record.id
+          AND user_id = helpful_validation.validator_id
+          AND contribution_type = 'concept_check'
+          AND COALESCE(content, '') <> ''
+        ORDER BY created_at ASC
+        LIMIT 1;
+
+        IF validator_concept_check.id IS NULL THEN
+            RETURN jsonb_build_object('verified', false, 'reason', 'missing_concept_check');
+        END IF;
+
+        active_user_ids := ARRAY[post_contribution.user_id, helpful_validation.validator_id];
+
+    ELSIF interaction_record.interaction_type = 'collaborative_editing' THEN
+        -- Rule 2: >=2 editors + third validator
+        SELECT ARRAY_AGG(DISTINCT user_id) INTO editor_ids
+        FROM public.contributions
+        WHERE interaction_id = interaction_record.id
+          AND contribution_type = 'edit';
+
+        IF COALESCE(array_length(editor_ids, 1), 0) < 2 THEN
+            RETURN jsonb_build_object('verified', false, 'reason', 'insufficient_editors');
+        END IF;
+
+        SELECT v.validator_id INTO final_validator_id
+        FROM public.validations v
+        WHERE v.interaction_id = interaction_record.id
+          AND v.validation_type = 'validation'
+          AND NOT (v.validator_id = ANY(editor_ids))
+        ORDER BY v.created_at ASC
+        LIMIT 1;
+
+        IF final_validator_id IS NULL THEN
+            RETURN jsonb_build_object('verified', false, 'reason', 'missing_third_member_validator');
+        END IF;
+
+        active_user_ids := editor_ids || final_validator_id;
+
+    ELSIF interaction_record.interaction_type = 'study_session' THEN
+        -- Rule 3: >=3 attendees and each has reflection
+        SELECT ARRAY_AGG(DISTINCT user_id) INTO attendee_ids
+        FROM public.contributions
+        WHERE interaction_id = interaction_record.id
+          AND contribution_type = 'attend';
+
+        SELECT ARRAY_AGG(DISTINCT user_id) INTO reflected_ids
+        FROM public.contributions
+        WHERE interaction_id = interaction_record.id
+          AND contribution_type = 'reflection'
+          AND COALESCE(content, '') <> '';
+
+        SELECT ARRAY_AGG(attendee)
+        INTO active_user_ids
+        FROM UNNEST(COALESCE(attendee_ids, ARRAY[]::UUID[])) attendee
+        WHERE attendee = ANY(COALESCE(reflected_ids, ARRAY[]::UUID[]));
+
+        IF COALESCE(array_length(active_user_ids, 1), 0) < 3 THEN
+            RETURN jsonb_build_object('verified', false, 'reason', 'insufficient_attendance_or_reflections');
+        END IF;
+    ELSE
+        RETURN jsonb_build_object('verified', false, 'reason', 'unsupported_interaction_type');
+    END IF;
+
+    UPDATE public.interactions
+    SET status = 'completed', completed_at = COALESCE(completed_at, NOW())
+    WHERE id = interaction_record.id;
+
+    -- Anti-gaming enforced by UNIQUE(mission_id, interaction_type, user_id)
+    FOREACH active_user_id IN ARRAY active_user_ids LOOP
+        INSERT INTO public.mission_progress (
+            mission_id,
+            interaction_type,
+            user_id,
+            interaction_id,
+            points
+        )
+        VALUES (
+            mission_record.id,
+            interaction_record.interaction_type,
+            active_user_id,
+            interaction_record.id,
+            1
+        )
+        ON CONFLICT (mission_id, interaction_type, user_id) DO NOTHING;
+    END LOOP;
+
+    mission_completed := public.evaluate_mission_completion(mission_record.id);
+
+    RETURN jsonb_build_object(
+        'verified', true,
+        'interaction_id', interaction_record.id,
+        'interaction_type', interaction_record.interaction_type,
+        'active_contributors', COALESCE(array_length(active_user_ids, 1), 0),
+        'mission_id', mission_record.id,
+        'mission_completed', mission_completed
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

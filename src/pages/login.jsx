@@ -23,9 +23,14 @@ const Login = () => {
         // Call your backend signup logic
         await user.signup(email, password);
       }
-      
-      // On success, redirect to the home/dashboard
-      navigate('/');
+
+      const profile = await user.profile();
+      if (!profile?.onboarding_completed) {
+        navigate('/onboarding');
+      } else {
+        // On success, redirect to the home/dashboard
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {
