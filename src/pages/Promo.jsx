@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { promo as promoAPI } from '@/api/entities';
+import { activity, buddySystem } from '@/api/entities';
 
 const TAB_CONFIG = [
   { key: 'events', label: 'Events' },
@@ -15,8 +15,23 @@ const Promo = () => {
   useEffect(() => {
     const loadPromo = async () => {
       try {
-        const data = await promoAPI.getAll();
-        setRecords(data || []);
+        const buddyRows = await buddySystem.getMine();
+        const buddyIds = buddyRows.map((row) => row.id);
+        const activities = await activity.getByBuddyIds(buddyIds);
+
+        const data = (activities || []).map((item) => {
+          const category = item.points >= 10 ? 'events' : item.points >= 5 ? 'clubs' : 'individual_events';
+          return {
+            id: item.id,
+            category,
+            title: `Activity ${item.id.slice(0, 8)}`,
+            description: `Activity record with ${item.points || 0} point(s).`,
+            organizer_name: 'System',
+            created_at: item.created_at,
+          };
+        });
+
+        setRecords(data);
       } catch (error) {
         console.error('Error loading promo data:', error);
         setRecords([]);
