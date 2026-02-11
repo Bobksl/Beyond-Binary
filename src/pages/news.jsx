@@ -39,8 +39,8 @@ const News = () => {
         <div className="space-y-8">
             {/* Header */}
             <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">My Reward Updates</h1>
-                <p className="text-lg text-gray-600">Recent updates generated from your reward records</p>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">My News Updates</h1>
+                <p className="text-lg text-gray-600">Recent news from my university</p>
             </div>
 
             {/* News List */}
@@ -53,7 +53,7 @@ const News = () => {
                             </svg>
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No updates yet</h3>
-                        <p className="text-gray-500">Reward updates will appear here once records are created.</p>
+                        <p className="text-gray-500">News updates will appear here soon. Thank you for your attention to this matter!</p>
                     </div>
                 ) : (
                     updates.map((item) => (
