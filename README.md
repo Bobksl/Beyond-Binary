@@ -99,10 +99,9 @@ All rewards are team-level and advance a single shared progress track.
 
 ### Setup Instructions
 
-1. **Database Setup:** Run the contents of `supabase-schema.sql` in your Supabase SQL Editor.
-2. **Install Dependencies:** `npm install`
-3. **Environment Configuration:** Configure `src/api/client.js` with your `supabaseUrl` and `supabaseKey`.
-4. **Run Application:** `npm run dev`
+1. **Install Dependencies:** `npm install`
+2. **Environment Configuration:** Configure `src/api/client.js` with your `supabaseUrl` and `supabaseKey`.
+3. **Run Application:** `npm run dev`
 
 ### Database Schema
 
