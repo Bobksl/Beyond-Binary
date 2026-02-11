@@ -295,30 +295,12 @@ const Profile = () => {
           <div className="space-y-6">
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
               <h3 className="text-lg font-semibold text-blue-800 mb-2">Upcoming Activities</h3>
-              <p className="text-blue-700">Your created and joined activities will appear here.</p>
-              <div className="mt-4 text-sm text-blue-600">
-                <p>• Study Session: Python Basics - Tomorrow 3 PM</p>
-                <p>• Game Night: Board Games - Friday 7 PM</p>
-                <p>• Movie Night: Sci‑Fi Marathon - Saturday 8 PM</p>
-              </div>
+              <p className="text-blue-700">Your created and joined activities will appear here once activity tracking is connected.</p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Activity History</h3>
-              <div className="space-y-3">
-                <div className="p-4 border rounded-lg flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">Study Group: Algorithms</span>
-                    <p className="text-sm text-gray-500">Completed 2 days ago • 4 participants</p>
-                  </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">+10 points</span>
-                </div>
-                <div className="p-4 border rounded-lg flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">Café Hangout</span>
-                    <p className="text-sm text-gray-500">Completed 1 week ago • 3 participants</p>
-                  </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">+5 points</span>
-                </div>
+              <div className="p-4 border rounded-lg text-sm text-gray-600">
+                No activity history available yet.
               </div>
             </div>
           </div>
@@ -328,31 +310,25 @@ const Profile = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-6">
-                <div className="text-4xl font-bold">1,245</div>
+                <div className="text-4xl font-bold">--</div>
                 <div className="text-lg">Total Points</div>
-                <div className="text-sm opacity-90">Rank: #42 among students</div>
+                <div className="text-sm opacity-90">No points data yet</div>
               </div>
               <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl p-6">
-                <div className="text-4xl font-bold">18</div>
+                <div className="text-4xl font-bold">--</div>
                 <div className="text-lg">Badges Earned</div>
-                <div className="text-sm opacity-90">Socializer, Scholar, Helper</div>
+                <div className="text-sm opacity-90">No badges data yet</div>
               </div>
               <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl p-6">
-                <div className="text-4xl font-bold">Level 7</div>
+                <div className="text-4xl font-bold">--</div>
                 <div className="text-lg">Current Level</div>
-                <div className="text-sm opacity-90">Next level in 355 points</div>
+                <div className="text-sm opacity-90">No level data yet</div>
               </div>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Recent Rewards</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {['Social Butterfly', 'Study Guru', 'Event Organizer', 'Team Player'].map(badge => (
-                  <div key={badge} className="border rounded-lg p-4 text-center">
-                    <div className="text-3xl mb-2">🏅</div>
-                    <div className="font-medium">{badge}</div>
-                    <div className="text-xs text-gray-500">Earned 2 weeks ago</div>
-                  </div>
-                ))}
+              <div className="p-4 border rounded-lg text-sm text-gray-600">
+                No rewards to display yet.
               </div>
             </div>
           </div>
@@ -362,19 +338,7 @@ const Profile = () => {
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-xl p-6">
               <h3 className="text-xl font-bold text-purple-800 mb-2">AI Buddy Matching</h3>
-              <p className="text-purple-700 mb-4">Our AI algorithm matches you with compatible buddies based on your profile, interests, and activity preferences.</p>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-purple-800">Match Strength</div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: '87%' }}></div>
-                  </div>
-                  <div className="text-xs text-purple-600 mt-1">87% compatibility with current matches</div>
-                </div>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                  Find New Buddies
-                </button>
-              </div>
+              <p className="text-purple-700">Buddy matching insights will appear here after matching data is available.</p>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Your Buddy Preferences</h3>
@@ -401,21 +365,8 @@ const Profile = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Suggested Matches</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {['Alex Chen', 'Jamie Rivera', 'Taylor Smith'].map(name => (
-                  <div key={name} className="border rounded-lg p-4 text-center hover:shadow-md transition-shadow">
-                    <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-3"></div>
-                    <div className="font-bold">{name}</div>
-                    <div className="text-sm text-gray-500">Computer Science, Year 3</div>
-                    <div className="mt-3 text-sm">
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded">Study Sessions</span>
-                      <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded ml-1">Hiking</span>
-                    </div>
-                    <button className="mt-4 w-full py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
-                      Connect
-                    </button>
-                  </div>
-                ))}
+              <div className="p-4 border rounded-lg text-sm text-gray-600">
+                No suggested matches available yet.
               </div>
             </div>
           </div>
