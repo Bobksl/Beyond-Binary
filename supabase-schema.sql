@@ -842,3 +842,44 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- AI Conversations table for storing chat history
+CREATE TABLE IF NOT EXISTS public.ai_conversations (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    team_id UUID REFERENCES public.teams(id) ON DELETE SET NULL,
+    messages JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.ai_conversations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own AI conversations" ON public.ai_conversations
+    FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Users can create their own AI conversations" ON public.ai_conversations
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can update their own AI conversations" ON public.ai_conversations
+    FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "Users can delete their own AI conversations" ON public.ai_conversations
+    FOR DELETE USING (user_id = auth.uid());
+
+-- Function to clean up old AI conversations (keep last 50 per user)
+CREATE OR REPLACE FUNCTION public.cleanup_old_ai_conversations()
+RETURNS VOID AS $$
+BEGIN
+    DELETE FROM public.ai_conversations
+    WHERE id IN (
+        SELECT id
+        FROM (
+            SELECT id, user_id,
+                   ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY updated_at DESC) as rn
+            FROM public.ai_conversations
+        ) ranked
+        WHERE rn > 50
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

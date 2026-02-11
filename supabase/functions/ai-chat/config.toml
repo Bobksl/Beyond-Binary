@@ -1,0 +1,44 @@
+[ai-chat]
+# AI Chat Edge Function Configuration
+
+# Enable CORS for all origins (adjust in production)
+cors = true
+
+# Rate limiting (requests per minute per IP)
+rate_limit = 60
+
+# Maximum request size (in bytes)
+max_request_size = 1048576  # 1MB
+
+# Timeout (in seconds)
+timeout = 30
+
+# Environment variables (set these in Supabase dashboard)
+# SUPABASE_URL = "https://nexqocjyytqsygkstyhv.supabase.co"
+# SUPABASE_ANON_KEY = "your-anon-key"
+# SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+# OPENAI_API_KEY = "your-openai-api-key"  # For future integration
+
+# Logging level
+log_level = "info"
+
+# Enable/disable features
+features = [
+  "conversation_history",
+  "suggestions",
+  "context_awareness",
+  "error_handling"
+]
+
+# Response settings
+max_response_length = 2000
+enable_markdown = true
+enable_typing_indicator = true
+
+# Conversation settings
+max_conversation_history = 50
+conversation_ttl_days = 30
+
+# Security settings
+require_auth_for_history = false
+allow_anonymous_chat = true
