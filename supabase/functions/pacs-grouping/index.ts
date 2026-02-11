@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { buildCompatibilityMap } from './scoring.ts';
 import { runPaCS } from './pacs.ts';
 import { PaCSConfig, Weights } from './types.ts';
@@ -57,13 +57,26 @@ const buildConfig = (row: GroupingConfigRow, overrides: Record<string, unknown> 
   };
 };
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 const json = (status: number, payload: Record<string, unknown>) =>
   new Response(JSON.stringify(payload), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    },
   });
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
     return json(405, { error: 'Method not allowed. Use POST.' });
   }
@@ -109,7 +122,7 @@ Deno.serve(async (req) => {
       .from('personality_compatibility')
       .select('p1,p2,score');
     if (compatError) throw compatError;
-    const compatibilityMap = buildCompatibilityMap((compatRows ?? []).map((row) => ({
+    const compatibilityMap = buildCompatibilityMap((compatRows ?? []).map((row: { p1: string; p2: string; score: number }) => ({
       p1: String(row.p1),
       p2: String(row.p2),
       score: Number(row.score),

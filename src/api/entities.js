@@ -212,14 +212,63 @@ export const reward = {
 export const grouping = {
   startRun: async (configOverrides = {}) => {
     const authUser = await getCurrentUser();
+
+    const {
+      data: { session },
+      error: sessionError,
+    } = await client.auth.getSession();
+
+    if (sessionError) {
+      throw new Error(sessionError.message);
+    }
+
+    if (!session?.access_token) {
+      throw new Error('Your session is missing or expired. Please log out and log in again.');
+    }
+
     const { data, error } = await client.functions.invoke('pacs-grouping', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: {
         created_by: authUser.id,
         config_overrides: configOverrides,
       },
     });
 
-    if (error) throw new Error(error.message || 'Failed to start PaCS run.');
+    if (error) {
+      let detailedMessage = error.message || 'Failed to start matching run.';
+
+      // Supabase FunctionsHttpError includes the raw Response in error.context.
+      // Try to surface backend JSON error (e.g., "Not enough eligible profiles...").
+      if (error?.context && typeof error.context.text === 'function') {
+        try {
+          const statusCode = typeof error.context.status === 'number' ? error.context.status : null;
+          const rawBody = await error.context.text();
+
+          if (rawBody) {
+            try {
+              const payload = JSON.parse(rawBody);
+              if (payload?.error && typeof payload.error === 'string') {
+                detailedMessage = payload.error;
+              } else {
+                detailedMessage = rawBody;
+              }
+            } catch {
+              detailedMessage = rawBody;
+            }
+          }
+
+          if (statusCode) {
+            detailedMessage = `[${statusCode}] ${detailedMessage}`;
+          }
+        } catch {
+          // Keep fallback message
+        }
+      }
+
+      throw new Error(detailedMessage);
+    }
     if (data?.error) throw new Error(data.error);
     return data;
   },
