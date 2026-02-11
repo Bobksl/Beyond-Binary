@@ -1,9 +1,14 @@
 # Beyond Binary - UniMate Collaborative Learning Platform
 
+## 0. Problem statement
+
+At NTU, news and information are fragmented. As a result, many students, particularly international students who move to Singapore alone, students who belong to gender or ethnic minorities within their course, and exchange students who may be the only representative from their home university will lack the informal networks and internal connections needed to access important information. This fragmented communication leads to unequal access to news and updates, causing these students to miss timely information and experience reduced inclusion and participation in the university community.
+
+This situation causes students to miss important academic and administrative information, limits their participation in campus activities and support services, and increases social isolation and disengagement. As a result, the university also fails to identify and develop student talents, overlooks potential student leaders and contributors, and misses opportunities to benefit from the skills, perspectives, and initiatives of under-represented students.
+
 ## 1. Project Overview
 
-UniMate is a centralized digital ecosystem engineered to mitigate structural fragmentation within the academic environment by consolidating disparate streams of information, community engagement, and administrative resources into a single interface. The platform utilizes stochastic optimization algorithms to facilitate intentional peer-to-peer connectivity, grouping students based on multivariate profiles including academic trajectories, shared interests, and year of study to catalyze cross-disciplinary interaction. Concurrently, UniMate serves as an integrated hub for institutional communications, extracurricular promotion, and specialized support resources for international student populations of all nationalities.
-
+UniMate is a unified digital platform that centralizes and links together student communities, university news and information, and student support resources in one place. The platform uses intelligent algorithms to connect and group students based on shared interests, course of study, and year of study, promoting meaningful interaction across diverse backgrounds. It also serves as a single hub for university announcements, student club and society events, and a curated resources page offering dedicated support for international students of all nationalities.
 ---
 
 ## 2. Theoretical Framework: Parallel Cascade Selection Molecular Dynamics (PaCS-MD)
@@ -56,7 +61,9 @@ The perceptron monitors group outcomes—such as mission completion rates and en
 
 ### Objective (SMART)
 
-Within each 7-day cycle, every learning team (4–6 students) must complete at least two verified cooperative academic interactions involving at least three distinct members of the team. This directly targets academic cooperation and social connection.
+For each week, every learning team (4–6 students) must complete at least two verified cooperative academic interactions involving at least three distinct members of the team. This directly targets academic cooperation and social connection. 
+
+As for rewards, points will be awarded upon completion of task, these points will be able to translate to real life vouchers and freebies. Fundings for these are discussed in the "commercialization" section below.
 
 ### Verification Rules (Strict Progress Criteria)
 
@@ -72,18 +79,6 @@ A reward is granted when at least three members join the same scheduled session 
 ### Anti-Gaming Constraint
 
 A team cannot earn more than one reward per member from the same interaction type in the same week. This enforces variety and broader participation.
-
-### Team Progression and Unlocks
-
-All rewards are team-level and advance a single shared progress track.
-
-* **Level 1: Shared Group Whiteboard** and concept-mapping tool.
-* **Level 2: Structured Peer-Tutoring Room** with role prompts.
-* **Level 3: Collaborative Exam-Prep Templates**.
-* **Level 4: Optional Wellbeing Micro-activities** for the team.
-* **Level 5: Team Space Theme** and customization.
-* **Level 6: Workspace Customization** and advanced mission types.
-
 ---
 
 ## 6. Technical Implementation
@@ -111,9 +106,18 @@ All rewards are team-level and advance a single shared progress track.
 * `contributions/validations`: Records individual participation and verification logs.
 * `missions/progress_tracks`: Tracks weekly objectives and team-level unlocks.
 
+
+## 7. Commercialization
+The page for individual and club promotion has the ability to be monetized in the future. Our AI algorithms can push these paid ads onto everyones promotional page. CLubs or even individuals can pay to get their promotions prioritized
+
 ---
 
-## 7. References
+## 8. Scalability
+This page will start off being used for NTU students. We strongly believe in its potential to be scaled to be used in other universities, such as NUS and SMU, which has a very similar operation structure to NTU. Further on, it can even be developed for universities abroad. 
+
+---
+
+## 8. References (for algorithm)
 
 Ikizawa, S., Hori, T., Wijaya, T. N., Kono, H., Bai, Z., Kimizono, T., Lu, W., Tran, D. P., & Kitao, A. (2024). PaCS-Toolkit: Optimized Software Utilities for Parallel Cascade Selection Molecular Dynamics (PaCS-MD) Simulations and Subsequent Analyses. *The Journal of Physical Chemistry B*, 128(15), 3631–3642. [https://doi.org/10.1021/acs.jpcb.4c01271](https://doi.org/10.1021/acs.jpcb.4c01271)
 
