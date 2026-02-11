@@ -1,134 +1,124 @@
-# Beyond Binary - Collaborative Learning Platform
+# Beyond Binary - UniMate Collaborative Learning Platform
 
-A game-like learning platform that rewards teams for cooperative academic interactions.
+## 1. Project Overview
 
-## Features
+UniMate is a centralized digital ecosystem engineered to mitigate structural fragmentation within the academic environment by consolidating disparate streams of information, community engagement, and administrative resources into a single interface. The platform utilizes stochastic optimization algorithms to facilitate intentional peer-to-peer connectivity, grouping students based on multivariate profiles including academic trajectories, shared interests, and year of study to catalyze cross-disciplinary interaction. Concurrently, UniMate serves as an integrated hub for institutional communications, extracurricular promotion, and specialized support resources for international student populations of all nationalities.
 
-- **Team-Based Learning**: Students are automatically assigned to teams of 4-6 members
-- **Weekly Missions**: Complete cooperative interactions to unlock rewards
-- **Three Interaction Types**:
-  - Peer explanations with helpful validations
-  - Collaborative problem solving
-  - Study sessions with reflections
-- **Progress System**: Level up and unlock tools, themes, and features
-- **News & Updates**: Campus announcements with bookmarking
-- **Anti-Gaming Measures**: Prevents reward farming while encouraging genuine collaboration
+---
 
-## Setup Instructions
+## 2. Theoretical Framework: Parallel Cascade Selection Molecular Dynamics (PaCS-MD)
 
-### 1. Database Setup
+### Biological Context and Mechanism
 
-1. Go to your Supabase project dashboard
-2. Navigate to the SQL Editor
-3. Copy and paste the entire contents of `supabase-schema.sql`
-4. Run the SQL script to create all tables, functions, and sample data
+The core grouping engine is based on **Parallel Cascade Selection Molecular Dynamics (PaCS-MD)**, an enhanced sampling method originally developed for computational biophysics. In its primary context, PaCS-MD is used to observe rare biological events—such as protein folding or ligand binding—that occur on timescales far beyond the reach of standard molecular simulations.
 
-### 2. Install Dependencies
+The method is executed as a "repetition of time leaps in parallel worlds" through a cycle consisting of:
 
-```bash
-npm install
-```
+1. **Parallel Sampling:** Multiple independent simulations (replicas) are run simultaneously for short time intervals.
+2. **Selection:** The resulting snapshots are ranked based on a specific "selection feature" (a physical metric like distance to a target state).
+3. **Branching:** The highest-ranking snapshots are selected to serve as the initial structures for the next cycle.
+4. **Velocity Re-initialization:** New random velocities are assigned to the atoms in each replica. This prevents the system from becoming trapped in local energy valleys and forces the exploration of new pathways toward the goal.
 
-### 3. Environment Configuration
+---
 
-Make sure your Supabase credentials are configured in `src/api/client.js`:
+## 3. Social Application and Team Formation
 
-```javascript
-const supabaseUrl = 'https://your-project.supabase.co'
-const supabaseKey = 'your-anon-key'
-```
+In the UniMate environment, these biophysical principles are translated into a social optimization engine. Rather than simulating atomic coordinates, the algorithm navigates a high-dimensional attribute space where the "target state" is a maximally cohesive team configuration.
 
-### 4. Run the Application
+The algorithm generates hundreds of "parallel worlds" representing potential group distributions. The system evaluates the social affinity within these groups based on user profiles. Through successive cycles of selection and "shuffling" (re-initializing the social velocity of unassigned users), the engine rapidly converges on group structures that maximize compatibility. This method effectively discovers high-performance team combinations that would be missed by traditional linear sorting or simple clustering methods.
 
-```bash
-npm run dev
-```
+---
 
-## How It Works
+## 4. Perceptron Logic and Weighting Strategy
+
+To evaluate group quality, UniMate employs a perceptron-inspired scoring model that balances interpretability with data-driven adaptation.
+
+### Scoring Baseline
+
+The initial selection feature uses a stable, normalized weight set (6:3:2:1):
+
+* **Interests (6):** The primary driver for intrinsic motivation and shared goals.
+* **Major (3):** Foundation for shared academic vocabulary and context.
+* **Year of Study (2):** Alignment of current academic pressure and experience level.
+* **Personality (1):** Fine-tuning for interpersonal harmony and communication styles.
+
+### Adaptive Tuning
+
+The perceptron monitors group outcomes—such as mission completion rates and engagement metrics—to refine these weights over time.
+
+* **Constant Baseline:** Maintained for governance, stability, and transparency.
+* **Controlled Variation:** The system allows for subtle, bounded tuning of weights based on cohort-specific data to discover non-obvious importance shifts.
+* **Guardrails:** To ensure fairness, all tuning is subject to hard bounds, periodic reviews, and manual rollback capabilities to the 6:3:2:1 baseline.
+
+---
+
+## 5. Cooperative Reward System
+
+### Objective (SMART)
+
+Within each 7-day cycle, every learning team (4–6 students) must complete at least two verified cooperative academic interactions involving at least three distinct members of the team. This directly targets academic cooperation and social connection.
+
+### Verification Rules (Strict Progress Criteria)
+
+Only the following actions generate progress toward mission completion:
+
+* **Rule 1: Peer Explanation**
+A reward is granted when Student A posts an explanation linked to a course topic, Student B marks the explanation as helpful, and Student B answers a short, automatically generated concept check (1 question). All three conditions must be satisfied.
+* **Rule 2: Collaborative Problem Solving**
+A reward is granted when at least two students co-edit a problem solution or summary, each contributor submits at least one distinct edit, and a third team member validates the final version.
+* **Rule 3: Live or Asynchronous Study Session**
+A reward is granted when at least three members join the same scheduled session (online or offline) and each member submits a short post-session reflection (one structured question).
+
+### Anti-Gaming Constraint
+
+A team cannot earn more than one reward per member from the same interaction type in the same week. This enforces variety and broader participation.
+
+### Team Progression and Unlocks
+
+All rewards are team-level and advance a single shared progress track.
+
+* **Level 1: Shared Group Whiteboard** and concept-mapping tool.
+* **Level 2: Structured Peer-Tutoring Room** with role prompts.
+* **Level 3: Collaborative Exam-Prep Templates**.
+* **Level 4: Optional Wellbeing Micro-activities** for the team.
+* **Level 5: Team Space Theme** and customization.
+* **Level 6: Workspace Customization** and advanced mission types.
+
+---
+
+## 6. Technical Implementation
 
 ### User Flow
-1. **Sign Up/Login**: Users authenticate and are automatically assigned to teams
-2. **Team Dashboard**: View current mission, team members, and progress
-3. **Create Interactions**: Start peer explanations, collaborative editing, or study sessions
-4. **Validate Contributions**: Mark explanations as helpful, validate edits, or confirm attendance
-5. **Mission Completion**: Teams earn points and unlock features when missions are completed
 
-### Mission Requirements
-- Complete at least 2 different interaction types per week
-- Involve at least 3 unique team members
-- All validations must be completed for interactions to count
+1. **Start:** Sign in with course/institution credentials.
+2. **Onboarding:** Complete quick profile (availability, study style, interests).
+3. **Placement:** Automatically placed into a small learning team via the PaCS engine.
+4. **Engagement:** View the weekly cooperative mission and create required activities.
+5. **Validation:** Complete role-based steps (contribute, receive help, validate).
+6. **Verification:** System verifies interaction automatically; team progress and new tools are unlocked.
 
-### Reward System
-- **Level 1**: Shared Whiteboard
-- **Level 2**: Peer Tutoring Room
-- **Level 3**: Exam Prep Templates
-- **Level 4**: Wellbeing Activities
-- **Level 5**: Custom Theme
-- **Level 6**: Workspace Customization
+### Setup Instructions
 
-## Database Schema
+1. **Database Setup:** Run the contents of `supabase-schema.sql` in your Supabase SQL Editor.
+2. **Install Dependencies:** `npm install`
+3. **Environment Configuration:** Configure `src/api/client.js` with your `supabaseUrl` and `supabaseKey`.
+4. **Run Application:** `npm run dev`
 
-The system uses the following main tables:
-- `profiles` - Extended user information
-- `teams` - Team groupings
-- `interactions` - Three types of collaborative activities
-- `contributions` - Individual participation records
-- `validations` - Helpful marks and validations
-- `missions` - Weekly team objectives
-- `progress_tracks` - Team progression and unlocks
-- `news` - Announcements and updates
-- `bookmarks` - User-saved news items
+### Database Schema
 
-## API Reference
+* `profiles`: Extended user information and attributes for PaCS-MD selection.
+* `teams`: Team groupings and metadata.
+* `interactions`: Records for the three types of collaborative activities.
+* `contributions/validations`: Records individual participation and verification logs.
+* `missions/progress_tracks`: Tracks weekly objectives and team-level unlocks.
 
-### User Management
-- `user.me()` - Get current user
-- `user.profile()` - Get extended profile
-- `user.updateProfile(updates)` - Update profile
+---
 
-### Teams
-- `teams.myTeam()` - Get user's team
-- `teams.getProgress(teamId)` - Get team progress
+## 7. References
 
-### Interactions
-- `interactions.getTeamInteractions(teamId)` - Get team activities
-- `interactions.createPeerExplanation(teamId, title, content)` - Create peer explanation
-- `interactions.createCollaborativeEdit(teamId, title, content)` - Create collaborative edit
-- `interactions.createStudySession(teamId, title, description, time)` - Create study session
-- `interactions.addValidation(interactionId, contributionId, type, feedback)` - Validate contribution
+Ikizawa, S., Hori, T., Wijaya, T. N., Kono, H., Bai, Z., Kimizono, T., Lu, W., Tran, D. P., & Kitao, A. (2024). PaCS-Toolkit: Optimized Software Utilities for Parallel Cascade Selection Molecular Dynamics (PaCS-MD) Simulations and Subsequent Analyses. *The Journal of Physical Chemistry B*, 128(15), 3631–3642. [https://doi.org/10.1021/acs.jpcb.4c01271](https://doi.org/10.1021/acs.jpcb.4c01271)
 
-### Missions
-- `missions.getCurrentMission(teamId)` - Get current weekly mission
-- `missions.checkCompletion(missionId)` - Check if mission is complete
-
-### News
-- `news.getAll()` - Get all news
-- `news.getFeatured()` - Get featured news
-- `news.getMyBookmarks()` - Get user's bookmarks
-- `news.toggleBookmark(newsId)` - Toggle bookmark status
-
-## Development
-
-### Adding New Interaction Types
-1. Update the `interaction_type` check constraint in the database
-2. Add new creation function in `src/api/entities.js`
-3. Update frontend components to handle the new type
-
-### Modifying Reward Logic
-1. Update the `increment_team_progress` function
-2. Modify unlock requirements in the database
-3. Update frontend display logic
-
-### Weekly Mission Automation
-Call `create_weekly_missions()` function weekly to generate new missions.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+---
 
 ## License
 
