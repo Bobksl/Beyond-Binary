@@ -161,3 +161,62 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- =====================================================
+-- AI Conversations Table for Chat History
+-- =====================================================
+CREATE TABLE IF NOT EXISTS public.ai_conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    team_id UUID,
+    messages JSONB NOT NULL DEFAULT '[]'
+);
+
+-- Indexes for AI conversations
+CREATE INDEX IF NOT EXISTS idx_ai_conversations_user_id ON public.ai_conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_conversations_team_id ON public.ai_conversations(team_id);
+CREATE INDEX IF NOT EXISTS idx_ai_conversations_updated_at ON public.ai_conversations(updated_at DESC);
+
+-- RLS for AI conversations
+ALTER TABLE public.ai_conversations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own AI conversations" ON public.ai_conversations;
+CREATE POLICY "Users can view own AI conversations" ON public.ai_conversations
+    FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own AI conversations" ON public.ai_conversations;
+CREATE POLICY "Users can insert own AI conversations" ON public.ai_conversations
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own AI conversations" ON public.ai_conversations;
+CREATE POLICY "Users can update own AI conversations" ON public.ai_conversations
+    FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own AI conversations" ON public.ai_conversations;
+CREATE POLICY "Users can delete own AI conversations" ON public.ai_conversations
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Trigger to update updated_at timestamp
+DROP TRIGGER IF EXISTS trg_ai_conversations_set_updated_at ON public.ai_conversations;
+CREATE TRIGGER trg_ai_conversations_set_updated_at
+BEFORE UPDATE ON public.ai_conversations
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- Function to clean up old AI conversations (keep last 50 per user)
+CREATE OR REPLACE FUNCTION public.cleanup_old_ai_conversations()
+RETURNS VOID AS $$
+BEGIN
+    DELETE FROM public.ai_conversations
+    WHERE id IN (
+        SELECT id
+        FROM (
+            SELECT id, user_id,
+                   ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY updated_at DESC) as rn
+            FROM public.ai_conversations
+        ) ranked
+        WHERE rn > 50
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './sidebar';
+import AIChatbox from './AIChatbox';
 import { user } from '@/api/entities';
 
 const Layout = () => {
@@ -68,6 +69,8 @@ const Layout = () => {
         {/* This is where your page content will "plug in" */}
         <Outlet />
       </main>
+      {/* AI Chatbox - only shown for authenticated users */}
+      <AIChatbox />
     </div>
   );
 };
