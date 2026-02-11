@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { user, teams } from '@/api/entities'; // Ensure path is correct
+import { user } from '@/api/entities'; // Ensure path is correct
+import { isSingaporeNationality } from '@/utils/countries';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [teamProgress, setTeamProgress] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [authResolved, setAuthResolved] = useState(false);
 
   // 1. Fetch user on mount
   useEffect(() => {
@@ -13,52 +15,45 @@ const Sidebar = () => {
       try {
         const data = await user.me();
         setCurrentUser(data);
-      } catch (err) {
+        if (data) {
+          const profileData = await user.profile();
+          setProfile(profileData);
+        }
+      } catch {
         setCurrentUser(null);
+        setProfile(null);
+      } finally {
+        setAuthResolved(true);
       }
     };
     fetchUser();
   }, []);
-
-  // 2. Fetch team progress
-  useEffect(() => {
-    const fetchTeamProgress = async () => {
-      if (currentUser) {
-        try {
-          const team = await teams.myTeam();
-          if (team) {
-            const progress = await teams.getProgress(team.id);
-            setTeamProgress(progress);
-          }
-        } catch (err) {
-          console.error("Error fetching team progress:", err);
-        }
-      }
-    };
-    fetchTeamProgress();
-  }, [currentUser]);
 
   // 3. Logout Handler
   const handleLogout = async () => {
     try {
       await user.logout();
       setCurrentUser(null);
-      setTeamProgress(null);
-      navigate('/'); // Redirect to home
+      setProfile(null);
+      navigate('/login'); // Redirect to login
     } catch (err) {
       console.error("Logout failed", err);
     }
   };
 
+  const isSingaporean = isSingaporeNationality(profile?.nationality);
+
   const navLinks = [
-    { name: 'Team Dashboard', path: '/' },
+    { name: 'Team Dashboard', path: '/home' },
     { name: 'News & Updates', path: '/news' },
+    ...(!isSingaporean ? [{ name: 'For International Students', path: '/international-students' }] : []),
+    { name: 'Promo', path: '/promo' },
   ];
 
   return (
     <aside className="w-64 bg-white border-r h-screen sticky top-0 flex flex-col">
       <div className="p-6 font-bold text-xl text-blue-600 border-b">
-        My App
+        UniMates
       </div>
 
       <nav className="p-4 space-y-2">
@@ -81,7 +76,9 @@ const Sidebar = () => {
 
       {/* 3. Conditional Bottom Section */}
       <div className="mt-auto p-4 border-t border-gray-100">
-        {currentUser ? (
+        {!authResolved ? (
+          <div className="px-4 py-2 text-sm text-gray-500">Checking session...</div>
+        ) : currentUser ? (
           <div className="space-y-3">
             <div className="px-4 py-2 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 font-medium">Logged in as:</p>
@@ -89,6 +86,12 @@ const Sidebar = () => {
                 {currentUser.email}
               </p>
             </div>
+            <NavLink
+              to="/profile"
+              className="block w-full text-left px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+            >
+              My Profile
+            </NavLink>
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors flex items-center gap-2"
