@@ -32,6 +32,49 @@ const INTEREST_OPTIONS = [
   { value: 'Student Leadership', emoji: '🧭' },
 ];
 
+const MAJOR_OPTIONS = [
+  { value: 'Accountancy', emoji: '🧾' },
+  { value: 'Accountancy and Business', emoji: '💼' },
+  { value: 'Business', emoji: '📈' },
+  { value: 'Double Degree in Business and Computer Engineering/Computing', emoji: '🤝' },
+  { value: 'Computer Engineering', emoji: '💻' },
+  { value: 'Computer Science', emoji: '🖥️' },
+  { value: 'Data Science and Artificial Intelligence', emoji: '🤖' },
+  { value: 'Aerospace Engineering', emoji: '🚀' },
+  { value: 'Bioengineering', emoji: '🧬' },
+  { value: 'Chemical and Biomolecular Engineering', emoji: '⚗️' },
+  { value: 'Civil Engineering', emoji: '🏗️' },
+  { value: 'Double Degree in Engineering and Economics', emoji: '📊' },
+  { value: 'Electrical and Electronic Engineering', emoji: '🔌' },
+  { value: 'Environmental Engineering', emoji: '🌱' },
+  { value: 'Information Engineering and Media', emoji: '📡' },
+  { value: 'Maritime Studies', emoji: '⚓' },
+  { value: 'Materials Engineering', emoji: '🧱' },
+  { value: 'Mechanical Engineering', emoji: '⚙️' },
+  { value: 'Art, Design and Media', emoji: '🎨' },
+  { value: 'Chinese', emoji: '🀄' },
+  { value: 'Communication Studies', emoji: '🗣️' },
+  { value: 'Economics', emoji: '💹' },
+  { value: 'English', emoji: '📚' },
+  { value: 'History', emoji: '🏛️' },
+  { value: 'Linguistics and Multilingual Studies', emoji: '🧠' },
+  { value: 'Philosophy', emoji: '🤔' },
+  { value: 'Psychology', emoji: '🧠' },
+  { value: 'Public Policy and Global Affairs', emoji: '🌍' },
+  { value: 'Sociology', emoji: '👥' },
+  { value: 'Biological and Biomedical Sciences', emoji: '🔬' },
+  { value: 'Biological Sciences and Psychology', emoji: '🧪' },
+  { value: 'Biomedical Sciences and Chinese Medicine', emoji: '🌿' },
+  { value: 'Chemistry and Biological Chemistry', emoji: '⚗️' },
+  { value: 'Environmental Earth Systems Science', emoji: '🌏' },
+  { value: 'Mathematical Sciences', emoji: '➗' },
+  { value: 'Physics and Applied Physics/Physics and Mathematical Sciences', emoji: '🧲' },
+  { value: 'Arts (with Education)', emoji: '🧑‍🏫' },
+  { value: 'Science (with Education)', emoji: '👩‍🔬' },
+  { value: 'Sports Science and Management', emoji: '🏅' },
+  { value: 'Medicine', emoji: '🩺' },
+];
+
 const Onboarding = () => {
   const navigate = useNavigate();
   const slides = ['nationality', 'major', 'year_of_study', 'personality', 'gender', 'interests'];
@@ -76,7 +119,7 @@ const Onboarding = () => {
       case 'nationality':
         return 'Please select your nationality before continuing.';
       case 'major':
-        return 'Please enter your major before continuing.';
+        return 'Please select your major before continuing.';
       case 'year_of_study':
         return 'Please select your current year of study before continuing.';
       case 'personality':
@@ -214,14 +257,19 @@ const Onboarding = () => {
             <div>
               <label className="block text-lg font-semibold text-gray-800">What is your major?</label>
               <p className="text-sm text-gray-600 mt-1">We use this to build academically compatible teams.</p>
-              <input
-                type="text"
+              <select
                 value={form.major}
                 onChange={(e) => onChange('major', e.target.value)}
                 className="mt-4 w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
-                placeholder="e.g., Computer Science"
                 required
-              />
+              >
+                <option value="">Select major</option>
+                {MAJOR_OPTIONS.map((major) => (
+                  <option key={major.value} value={major.value}>
+                    {major.emoji} {major.value}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

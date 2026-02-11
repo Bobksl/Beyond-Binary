@@ -208,3 +208,38 @@ export const reward = {
     return data || [];
   },
 };
+
+export const grouping = {
+  startRun: async (configOverrides = {}) => {
+    const authUser = await getCurrentUser();
+    const { data, error } = await client.functions.invoke('pacs-grouping', {
+      body: {
+        created_by: authUser.id,
+        config_overrides: configOverrides,
+      },
+    });
+
+    if (error) throw new Error(error.message || 'Failed to start PaCS run.');
+    if (data?.error) throw new Error(data.error);
+    return data;
+  },
+
+  getLatestRun: async () => {
+    const { data, error } = await client
+      .from('group_runs')
+      .select('*')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  getMyLatestGroup: async () => {
+    const { data, error } = await client.rpc('get_my_latest_group');
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+};
