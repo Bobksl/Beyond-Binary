@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { user } from '@/api/entities';
+import { user, teams, unlocks } from '@/api/entities';
+import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('personal');
   const [editMode, setEditMode] = useState(false);
+  const [team, setTeam] = useState(null);
+  const [teamProgress, setTeamProgress] = useState(null);
+  const [availableBadges, setAvailableBadges] = useState([]);
   const [formData, setFormData] = useState({
     bio: '',
     hobbies: [],
@@ -17,29 +22,51 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const checkAuthAndFetch = async () => {
+      // 1. Check authentication
+      const currentUser = await user.me();
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+
       try {
+        // 2. Fetch user profile
         const userProfile = await user.profile();
+        if (!userProfile) {
+          // Profile may not exist; redirect to onboarding?
+          // For now, just set empty profile
+          setLoading(false);
+          return;
+        }
         setProfile(userProfile);
-        if (userProfile) {
-          setFormData({
-            bio: userProfile.bio || '',
-            hobbies: userProfile.hobbies || [],
-            activity_preferences: userProfile.activity_preferences || [],
-            buddy_preferences: userProfile.buddy_preferences || [],
-            preferred_communication: userProfile.preferred_communication || 'chat',
-            academic_goals: userProfile.academic_goals || '',
-            social_interests: userProfile.social_interests || [],
-          });
+        setFormData({
+          bio: userProfile.bio || '',
+          hobbies: userProfile.hobbies || [],
+          activity_preferences: userProfile.activity_preferences || [],
+          buddy_preferences: userProfile.buddy_preferences || [],
+          preferred_communication: userProfile.preferred_communication || 'chat',
+          academic_goals: userProfile.academic_goals || '',
+          social_interests: userProfile.social_interests || [],
+        });
+
+        // 3. Fetch team and gamification data
+        const teamData = await teams.myTeam();
+        setTeam(teamData);
+        if (teamData) {
+          const progress = await teams.getProgress(teamData.id);
+          setTeamProgress(progress);
+          const badges = await unlocks.getTeamUnlocks(teamData.id);
+          setAvailableBadges(badges);
         }
       } catch (error) {
-        console.error('Failed to fetch profile:', error);
+        console.error('Failed to fetch profile or team data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    checkAuthAndFetch();
+  }, [navigate]);
 
   const handleSave = async () => {
     try {
@@ -295,30 +322,41 @@ const Profile = () => {
           <div className="space-y-6">
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
               <h3 className="text-lg font-semibold text-blue-800 mb-2">Upcoming Activities</h3>
-              <p className="text-blue-700">Your created and joined activities will appear here.</p>
-              <div className="mt-4 text-sm text-blue-600">
-                <p>• Study Session: Python Basics - Tomorrow 3 PM</p>
-                <p>• Game Night: Board Games - Friday 7 PM</p>
-                <p>• Movie Night: Sci‑Fi Marathon - Saturday 8 PM</p>
-              </div>
+              <p className="text-blue-700">Activities you create or join will appear here.</p>
+              {profile?.activity_preferences && profile.activity_preferences.length > 0 ? (
+                <div className="mt-4">
+                  <p className="text-sm text-blue-700 font-medium">Based on your preferences:</p>
+                  <ul className="mt-2 space-y-1 text-blue-600">
+                    {profile.activity_preferences.slice(0, 3).map((pref, idx) => (
+                      <li key={idx}>• {pref} – Join a session soon!</li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-blue-500 mt-3">Set up your first activity to get started.</p>
+                </div>
+              ) : (
+                <div className="mt-4 text-sm text-blue-600">
+                  <p>No activity preferences set yet. Edit your profile to tell us what you enjoy.</p>
+                </div>
+              )}
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Activity History</h3>
-              <div className="space-y-3">
-                <div className="p-4 border rounded-lg flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">Study Group: Algorithms</span>
-                    <p className="text-sm text-gray-500">Completed 2 days ago • 4 participants</p>
-                  </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">+10 points</span>
-                </div>
-                <div className="p-4 border rounded-lg flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">Café Hangout</span>
-                    <p className="text-sm text-gray-500">Completed 1 week ago • 3 participants</p>
-                  </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">+5 points</span>
-                </div>
+              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl">
+                <div className="text-4xl mb-4">📅</div>
+                <h4 className="text-xl font-semibold text-gray-700">No activities yet</h4>
+                <p className="text-gray-600 mt-2 max-w-md mx-auto">
+                  Once you participate in team activities, your history will appear here.
+                </p>
+                {team ? (
+                  <button
+                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={() => {/* TODO: navigate to create activity */}}
+                  >
+                    Create Activity
+                  </button>
+                ) : (
+                  <p className="mt-4 text-sm text-gray-500">Join a team to start participating in activities.</p>
+                )}
               </div>
             </div>
           </div>
@@ -326,35 +364,56 @@ const Profile = () => {
 
         {activeTab === 'gamification' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-6">
-                <div className="text-4xl font-bold">1,245</div>
-                <div className="text-lg">Total Points</div>
-                <div className="text-sm opacity-90">Rank: #42 among students</div>
+            {!team ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
+                <div className="text-4xl mb-4">👥</div>
+                <h3 className="text-xl font-semibold text-gray-700">Join a Team</h3>
+                <p className="text-gray-600 mt-2">You need to be part of a team to unlock gamification features.</p>
+                <p className="text-sm text-gray-500 mt-1">Once you join a team, your points, badges, and level will appear here.</p>
               </div>
-              <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl p-6">
-                <div className="text-4xl font-bold">18</div>
-                <div className="text-lg">Badges Earned</div>
-                <div className="text-sm opacity-90">Socializer, Scholar, Helper</div>
-              </div>
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl p-6">
-                <div className="text-4xl font-bold">Level 7</div>
-                <div className="text-lg">Current Level</div>
-                <div className="text-sm opacity-90">Next level in 355 points</div>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Recent Rewards</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {['Social Butterfly', 'Study Guru', 'Event Organizer', 'Team Player'].map(badge => (
-                  <div key={badge} className="border rounded-lg p-4 text-center">
-                    <div className="text-3xl mb-2">🏅</div>
-                    <div className="font-medium">{badge}</div>
-                    <div className="text-xs text-gray-500">Earned 2 weeks ago</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl p-6">
+                    <div className="text-4xl font-bold">{teamProgress?.total_points || 0}</div>
+                    <div className="text-lg">Total Points</div>
+                    <div className="text-sm opacity-90">Earned through team activities</div>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl p-6">
+                    <div className="text-4xl font-bold">{availableBadges.length}</div>
+                    <div className="text-lg">Badges Earned</div>
+                    <div className="text-sm opacity-90">
+                      {availableBadges.length > 0
+                        ? availableBadges.slice(0, 3).map(b => b.name).join(', ')
+                        : 'No badges yet'}
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl p-6">
+                    <div className="text-4xl font-bold">Level {teamProgress?.current_level || 1}</div>
+                    <div className="text-lg">Current Level</div>
+                    <div className="text-sm opacity-90">Keep earning points to level up</div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Recent Rewards</h3>
+                  {availableBadges.length === 0 ? (
+                    <div className="text-center py-6 text-gray-500">
+                      No badges earned yet. Complete team missions to earn rewards.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {availableBadges.slice(0, 4).map(badge => (
+                        <div key={badge.id} className="border rounded-lg p-4 text-center">
+                          <div className="text-3xl mb-2">🏅</div>
+                          <div className="font-medium">{badge.name}</div>
+                          <div className="text-xs text-gray-500">Unlocked at level {badge.required_level}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -365,14 +424,46 @@ const Profile = () => {
               <p className="text-purple-700 mb-4">Our AI algorithm matches you with compatible buddies based on your profile, interests, and activity preferences.</p>
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-purple-800">Match Strength</div>
+                  <div className="text-sm font-medium text-purple-800">Profile Completeness</div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: '87%' }}></div>
+                    <div
+                      className="bg-purple-600 h-2.5 rounded-full"
+                      style={{
+                        width: `${
+                          profile
+                            ? Math.min(
+                                100,
+                                (profile.bio ? 20 : 0) +
+                                  (profile.hobbies?.length ? 15 : 0) +
+                                  (profile.activity_preferences?.length ? 15 : 0) +
+                                  (profile.buddy_preferences?.length ? 20 : 0) +
+                                  (profile.academic_goals ? 15 : 0) +
+                                  (profile.social_interests?.length ? 15 : 0)
+                              )
+                            : 0
+                        }%`
+                      }}
+                    ></div>
                   </div>
-                  <div className="text-xs text-purple-600 mt-1">87% compatibility with current matches</div>
+                  <div className="text-xs text-purple-600 mt-1">
+                    {profile
+                      ? `Complete your profile to improve match accuracy (${Math.min(
+                          100,
+                          (profile.bio ? 20 : 0) +
+                            (profile.hobbies?.length ? 15 : 0) +
+                            (profile.activity_preferences?.length ? 15 : 0) +
+                            (profile.buddy_preferences?.length ? 20 : 0) +
+                            (profile.academic_goals ? 15 : 0) +
+                            (profile.social_interests?.length ? 15 : 0)
+                        )}%)`
+                      : 'Profile loading...'}
+                  </div>
                 </div>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                  Find New Buddies
+                <button
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  onClick={() => setEditMode(true)}
+                >
+                  Edit Profile
                 </button>
               </div>
             </div>
@@ -401,22 +492,42 @@ const Profile = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-4">Suggested Matches</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {['Alex Chen', 'Jamie Rivera', 'Taylor Smith'].map(name => (
-                  <div key={name} className="border rounded-lg p-4 text-center hover:shadow-md transition-shadow">
-                    <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-3"></div>
-                    <div className="font-bold">{name}</div>
-                    <div className="text-sm text-gray-500">Computer Science, Year 3</div>
-                    <div className="mt-3 text-sm">
-                      <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded">Study Sessions</span>
-                      <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded ml-1">Hiking</span>
+              {!profile || !profile.buddy_preferences || profile.buddy_preferences.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl">
+                  <div className="text-5xl mb-4">🤝</div>
+                  <h4 className="text-xl font-semibold text-gray-700">Set your buddy preferences</h4>
+                  <p className="text-gray-600 mt-2 max-w-md mx-auto">
+                    Tell us what you're looking for in a buddy, and our AI will suggest compatible matches.
+                  </p>
+                  <button
+                    className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    onClick={() => setEditMode(true)}
+                  >
+                    Set Preferences
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="border rounded-lg p-4 text-center hover:shadow-md transition-shadow">
+                      <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-3"></div>
+                      <div className="font-bold">Potential Match {i}</div>
+                      <div className="text-sm text-gray-500">Based on your interests</div>
+                      <div className="mt-3 text-sm">
+                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                          {profile.activity_preferences?.[0] || 'Study Sessions'}
+                        </span>
+                        <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded ml-1">
+                          {profile.hobbies?.[0] || 'Hiking'}
+                        </span>
+                      </div>
+                      <button className="mt-4 w-full py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
+                        Connect
+                      </button>
                     </div>
-                    <button className="mt-4 w-full py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
-                      Connect
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
